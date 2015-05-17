@@ -11,7 +11,8 @@
 
 #include "../../octet.h"
 
-#include "Ray-Tracing.h"
+#include "inputs.h"
+#include "RayTracing.h"
 
 /// Create a box with octet
 int main(int argc, char **argv) {
@@ -19,7 +20,7 @@ int main(int argc, char **argv) {
   octet::app::init_all(argc, argv);
 
   // our application.
-  octet::Ray-Tracing app(argc, argv);
+  octet::RayTracing app(argc, argv);
   app.init();
 
   // open windows

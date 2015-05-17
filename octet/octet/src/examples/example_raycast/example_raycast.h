@@ -13,6 +13,11 @@ namespace octet {
     ref<material> custom_mat;
 
     ref<param_uniform> camera_pos;
+    ref<param_uniform> rand_pos;
+
+    ref<camera_instance> camera;
+
+    int i = 0;
 
   public:
     /// this is called when we construct the class before everything is initialised.
@@ -21,12 +26,16 @@ namespace octet {
 
     /// this is called once OpenGL is initialized
     void app_init() {
-      app_scene =  new visual_scene();
+      app_scene = new visual_scene();
       app_scene->create_default_camera_and_lights();
 
       param_shader *shader = new param_shader("shaders/default.vs", "shaders/raycast.fs");
       custom_mat = new material(vec4(1, 1, 1, 1), shader);
       atom_t atom_camera_pos = app_utils::get_atom("camera_pos");
+      vec3 random_position = vec3(0, 0, 0);
+      atom_t atom_rand_pos = app_utils::get_atom("sphere_pos");
+      rand_pos = custom_mat->add_uniform(&random_position, atom_rand_pos, GL_FLOAT_VEC3, 1, param::stage_fragment);
+
       vec3 val(0, 0, 0);
       camera_pos = custom_mat->add_uniform(&val, atom_camera_pos, GL_FLOAT_VEC3, 1, param::stage_fragment);
 
@@ -46,19 +55,30 @@ namespace octet {
       scene_node *box_node = app_scene->get_mesh_instance(0)->get_node();
 
       // camera position in model space
-      vec3 pos = box_node->inverse_transform(camera_node->get_position());
+      vec3 pos = camera_node->get_position();
       //char tmp[256]; printf("%s\n", pos.toString(tmp, 256));
       custom_mat->set_uniform(camera_pos, &pos, sizeof(pos));
 
+      if (is_key_down('W')) {
+        camera_node->translate(vec3(0, 0, 1));
+        ++i;
+      }
+      if (is_key_down('S'))
+      {
+        camera_node->translate(vec3(0, 0, -1));
+        --i;
+      }
+      if (is_key_down('A')) camera_node->translate(vec3(1, 0, 0));
+      if (is_key_down('D')) camera_node->translate(vec3(-1, 0, 0));
+
+      vec3 random_position = vec3(i, 0, 0);
+      custom_mat->set_uniform(rand_pos, &random_position, sizeof(random_position));
+
       // update matrices. assume 30 fps.
-      app_scene->update(1.0f/30);
+      app_scene->update(1.0f / 30);
 
       // draw the scene
       app_scene->render((float)vx / vy);
-
-      // tumble the box  (there is only one mesh instance)
-      box_node->rotate(1, vec3(1, 0, 0));
-      box_node->rotate(1, vec3(0, 1, 0));
     }
   };
 }
