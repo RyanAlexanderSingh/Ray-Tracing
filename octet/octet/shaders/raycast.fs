@@ -71,8 +71,6 @@ void main() {
 
   Ray ray = Ray(vec3(0, 2.5, 12.0), normalize(vec3(uv.x, uv.y, -1.0)));
 
-
-
   //Andys example code
   vec3 ray_start = model_pos_;
   vec3 ray_direction = normalize(model_pos_ - camera_pos);
@@ -97,7 +95,7 @@ void main() {
   }
 
   if (min_d == 1e37) {
-    gl_FragColor = vec4(0.3, 0.3, 0.3, 0);
+    gl_FragColor = vec4(0.0, 0., 0.1, 0);
     //discard;
   }
 }
