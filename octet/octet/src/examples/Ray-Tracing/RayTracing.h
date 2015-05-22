@@ -52,9 +52,9 @@ namespace octet {
 
       camera = app_scene->get_camera_instance(0);
 
-      inputs.init(this, app_scene);
-
       start_time = std::chrono::system_clock::now();
+
+      inputs.init(this, app_scene);
 
       param_shader *shader = new param_shader("shaders/default.vs", "shaders/raycast.fs");
       raytracer = new material(vec4(1, 1, 1, 1), shader);
@@ -65,7 +65,7 @@ namespace octet {
       atom_t atom_resolution = app_utils::get_atom("resolution");
       uniform_resolution = raytracer->add_uniform(&viewport, atom_resolution, GL_FLOAT_VEC2, 1, param::stage_fragment);
 
-      vec3 val(0, 0, 0);
+      vec3 val(0);
       atom_t atom_camera_pos = app_utils::get_atom("camera_pos");
       camera_pos = raytracer->add_uniform(&val, atom_camera_pos, GL_FLOAT_VEC3, 1, param::stage_fragment);
 
@@ -84,7 +84,7 @@ namespace octet {
       get_viewport_size(vx, vy);
       app_scene->begin_render(vx, vy);
 
-      //inputs.mouse_inputs();
+      inputs.update();
       update_spheres();
 
       // update matrices. assume 30 fps.
