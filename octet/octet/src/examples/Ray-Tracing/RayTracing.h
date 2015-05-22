@@ -1,15 +1,15 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
-// (C) Andy Thomason 2012-2014
+// (C) Andy Thomason 2012-2014 -- Octet Framework
 //
-// Modular Framework for OpenGLES2 rendering on multiple platforms.
+// Ryan Singh - Raytracer project for Advanced Mathmematics (29/05/2015)
 //
 
 #include <chrono>
 #include <ctime>
 
 namespace octet {
-  /// Scene containing a box with octet.
+  /// Scene for drawing a simple raytracer with a set of spheres and a plane.
   class RayTracing : public app {
     
     std::chrono::time_point<std::chrono::system_clock> start_time;
@@ -18,10 +18,11 @@ namespace octet {
     ref<visual_scene> app_scene;
 
     ref<material> raytracer;
+
     ref<camera_instance> camera;
 
     //uniform params
-    ref<param_uniform> camera_pos;
+    ref<param_uniform> uniform_camera;
     ref<param_uniform> uniform_resolution;
     ref<param_uniform> uniform_time;
 
@@ -32,10 +33,11 @@ namespace octet {
     RayTracing(int argc, char **argv) : app(argc, argv) {
     }
 
+    ///We need to update the raytracer with uniforms such as time.
     void update_spheres(){
       scene_node *camera_node = camera->get_node();
       vec3 pos = camera_node->get_position();
-      raytracer->set_uniform(camera_pos, &pos, sizeof(pos));
+      raytracer->set_uniform(uniform_camera, &pos, sizeof(pos));
 
       //Update the time for the sphere movemenets
       std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
@@ -67,7 +69,7 @@ namespace octet {
 
       vec3 val(0);
       atom_t atom_camera_pos = app_utils::get_atom("camera_pos");
-      camera_pos = raytracer->add_uniform(&val, atom_camera_pos, GL_FLOAT_VEC3, 1, param::stage_fragment);
+      uniform_camera = raytracer->add_uniform(&val, atom_camera_pos, GL_FLOAT_VEC3, 1, param::stage_fragment);
 
       float time = 0;
       atom_t atom_time = app_utils::get_atom("time");
