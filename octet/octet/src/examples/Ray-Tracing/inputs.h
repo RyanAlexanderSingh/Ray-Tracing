@@ -69,7 +69,7 @@ namespace octet{
 
     void update(){
       //mouse_inputs();
-      keyboard_inputs();
+      //keyboard_inputs();
     }
    };
 }

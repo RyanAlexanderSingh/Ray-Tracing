@@ -89,6 +89,7 @@ namespace octet {
   // this is the class that all apps are derived from.
   class app : public app_common {
     HGLRC gl_context;
+
     HWND window_handle;
 
     void init_gl_context(HWND window_handle) {
@@ -155,7 +156,7 @@ namespace octet {
       gl_context = 0;
      
       window_handle = CreateWindowW(L"MyClass", L"octet",
-        WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 768, 768,
+        WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 1600, 1024,
         NULL, NULL, wndclass.hInstance, (LPVOID)this
       );
 
