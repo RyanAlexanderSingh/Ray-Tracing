@@ -2,8 +2,6 @@
 //
 // (C) Ryan Singh 2015
 //
-// Based off Chapter 1. Effective Water Simulation from Physical Models http://http.developer.nvidia.com/GPUGems/gpugems_ch01.html
-// Using the Gerstner wave function 
 //
 
 #ifndef INPUTS_H_INCLUDED
@@ -17,6 +15,8 @@ namespace octet{
     ref<visual_scene> app_scene;
     ref<camera_instance> camera;
 
+    vec3 *ray_position;
+
   public:
     inputs(){}
 
@@ -24,7 +24,6 @@ namespace octet{
       //mouse control using x and y pos of mouse
       int x, y;
       the_app->get_mouse_pos(x, y);
-      //AntTweakBar stuff end
       int vx, vy;
       the_app->get_viewport_size(vx, vy);
 
@@ -42,19 +41,19 @@ namespace octet{
         modelToWorld.rotateX(-70);
       camera_mat = modelToWorld;//apply to the node
     }
-
+    
     void keyboard_inputs(){
       if (the_app->is_key_down('W')){
-        camera->get_node()->translate(vec3(0, 0, -1));
+        ++ray_position->z();
       }
       if (the_app->is_key_down('S')){
-        camera->get_node()->translate(vec3(0, 0, 1));
+        --ray_position->z();
       }
-      if (the_app->is_key_down('A')){
-        camera->get_node()->translate(vec3(-1, 0, 0));
+      if (the_app->is_key_down(key_up)){
+        ++ray_position->y();
       }
-      if (the_app->is_key_down('D')){
-        camera->get_node()->translate(vec3(1, 0, 0));
+      if (the_app->is_key_down(key_down)){
+        --ray_position->y();
       }
       if (the_app->is_key_down(key_esc)){
         exit(1);
@@ -62,14 +61,15 @@ namespace octet{
     }
 
     //we're going to want an init function
-    void init(app *app, visual_scene *vs){
+    void init(app *app, visual_scene *vs, vec3 *ray_pos){
       this->the_app = app;
       app_scene = vs;
+      ray_position = ray_pos;
     }
 
     void update(){
       //mouse_inputs();
-      //keyboard_inputs();
+      keyboard_inputs();
     }
    };
 }

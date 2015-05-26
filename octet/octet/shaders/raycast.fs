@@ -6,7 +6,9 @@
 uniform float time;
 uniform vec2 resolution;
 uniform vec2 mouse;
-uniform vec2 ray_pos;
+uniform vec3 ray_pos;
+
+
 
 struct Ray {
     vec3 origin;
@@ -14,26 +16,26 @@ struct Ray {
 };
 
 struct Light {
-    vec3 color;
-    vec3 direction;
+  vec3 color;
+  vec3 direction;
 };
 
 struct Material{
-vec3 color;
-float diffuse;
-float specular;
+  vec3 color;
+  float diffuse;
+  float specular;
 };
 
 struct Intersect {
-float len;
-vec3 normal;
-Material material;
+  float len;
+  vec3 normal;
+  Material material;
 };
 
 struct Sphere{
-float radius;
-vec3 position;
-Material material;
+  float radius;
+  vec3 position;
+  Material material;
 };
 
 struct Plane{
@@ -44,7 +46,7 @@ struct Plane{
 float squared(float f) { return f * f; }
 
 const float epsilon = 1e-3;
-const float iterations = 2;
+const float iterations = 12;
 
 const float exposure = 1e-2;
 const float gamma = 2.2;
@@ -59,14 +61,14 @@ const vec3 ambient = vec3(0.6, 0.8, 1.0) * intensity / gamma;
 
 const Intersect miss = Intersect(0.0, vec3(0.0), Material(vec3(0.0), 0.0, 0.0));
 
-  const int num_spheres = 3;
-  Sphere spheres[num_spheres];
+const int num_spheres = 3;
+Sphere spheres[num_spheres];
 
 void generateShapes(){
 
   spheres[0] = Sphere(2.0, vec3(-4.0, 3.0 + sin(time), 0), Material(vec3(1.0, 0.0, 0.2), 1.0, 0.001));
-  spheres[1] = Sphere(3.0, vec3( 4.0 + cos(time), 1.5, 0), Material(vec3(0.0, 0.2, 1.0), 1.0, 0.0));
-  spheres[2] = Sphere(1.0, vec3( 0.5, 1.0, 6.0), Material(vec3(1.0, 1.0, 1.0), 0.5, 0.25));
+  spheres[1] = Sphere(3.0, vec3(4.0 + cos(time), 3, 0), Material(vec3(0.0, 0.2, 1.0), 1.0, 0.0));
+  spheres[2] = Sphere(1.0, vec3(0.5, 1.0, 6.0), Material(vec3(1.0, 1.0, 1.0), 0.5, 0.25));
 }
 
 Intersect intersect(Ray ray, Sphere sphere) {
@@ -127,7 +129,7 @@ vec3 radiance(Ray ray) {
 
         } 
         else {
-            vec3 spotlight = vec3(1e6) * pow(abs(dot(ray.direction, light.direction)), 250.0);
+            vec3 spotlight = vec3(1e6) * pow(abs(dot(ray.direction, light.direction)), 600.0);
             color += mask * (ambient + spotlight); break;
         }
     }
@@ -142,7 +144,7 @@ void main() {
 
  vec2 uv = (-1.0 + 2.0 * gl_FragCoord.xy / resolution.xy) / vec2(1.0, resolution.x / resolution.y);
  //http://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
-  Ray ray = Ray(vec3(0.0, ray_pos.y, ray_pos.x), normalize(vec3(uv.x, uv.y, -1.0)));
+  Ray ray = Ray(vec3(0.0, ray_pos.y, ray_pos.z), normalize(vec3(uv.x, uv.y, -1.0)));
   gl_FragColor = vec4(pow(radiance(ray) * exposure, vec3(1.0 / gamma)), 1.0);
 
 //  Andys example for the raytracer

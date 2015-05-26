@@ -27,28 +27,13 @@ namespace octet {
     ref<param_uniform> uniform_time;
     ref<param_uniform> uniform_ray_pos;
 
-    vec2 ray_position;
+    vec3 ray_position;
 
     inputs inputs;
 
   public:
     /// this is called when we construct the class before everything is initialised.
     RayTracing(int argc, char **argv) : app(argc, argv) {
-    }
-
-    void keyboard_inputs(){
-      if (is_key_down(key_up)){
-        ++ray_position.x();
-      }
-      if (is_key_down(key_down)){
-        --ray_position.x();
-      }
-      if (is_key_down(key_left)){
-        ++ray_position.y();
-      }
-      if (is_key_down(key_right)){
-        --ray_position.y();
-      }
     }
 
     ///We need to update the raytracer with uniforms such as time.
@@ -73,13 +58,12 @@ namespace octet {
     void app_init() {
       app_scene = new visual_scene();
       app_scene->create_default_camera_and_lights();
-
       camera = app_scene->get_camera_instance(0);
       camera->get_node()->translate(vec3(0, 0, -30));
 
       start_time = std::chrono::system_clock::now();
 
-      inputs.init(this, app_scene);
+      inputs.init(this, app_scene, &ray_position);
 
       param_shader *shader = new param_shader("shaders/default.vs", "shaders/raycast.fs");
       raytracer = new material(vec4(1, 1, 1, 1), shader);
@@ -100,11 +84,11 @@ namespace octet {
       atom_t atom_time = app_utils::get_atom("time");
       uniform_time = raytracer->add_uniform(&time, atom_time, GL_FLOAT, 1, param::stage_fragment);
 
-      ray_position = vec2(12.0f, 2.5f);
+      ray_position = vec3(0.0f, 2.5f, 12.0f);
       atom_t atom_ray_pos = app_utils::get_atom("ray_pos");
-      uniform_ray_pos = raytracer->add_uniform(&ray_position, atom_ray_pos, GL_FLOAT_VEC2, 1, param::stage_fragment);
+      uniform_ray_pos = raytracer->add_uniform(&ray_position, atom_ray_pos, GL_FLOAT_VEC3, 1, param::stage_fragment);
 
-      mesh_box *box = new mesh_box(vec3(10, 1, 10));
+      mesh_box *box = new mesh_box(vec3(10));
       scene_node *node = new scene_node();
       app_scene->add_child(node);
       app_scene->add_mesh_instance(new mesh_instance(node, box, raytracer));
@@ -117,7 +101,6 @@ namespace octet {
       app_scene->begin_render(vx, vy);
 
       inputs.update();
-      keyboard_inputs();
       update_uniforms();
 
       // update matrices. assume 30 fps.
