@@ -44,7 +44,7 @@ struct Plane{
 float squared(float f) { return f * f; }
 
 const float epsilon = 1e-3;
-const float iterations = 18;
+const int iterations = 18;
 
 const float exposure = 1e-2;
 const float gamma = 2.2;
