@@ -44,7 +44,7 @@ struct Plane{
 float squared(float f) { return f * f; }
 
 const float epsilon = 1e-3;
-const float iterations = 12;
+const float iterations = 18;
 
 const float exposure = 1e-2;
 const float gamma = 2.2;
@@ -52,20 +52,21 @@ const float gamma = 2.2;
 const float intensity = 100.0;
 const vec3 ambient = vec3(0.6, 0.8, 1.0) * intensity / gamma;
 
- Light light = Light(vec3(1.0) * intensity, normalize(
-                vec3(-1.0 + 4.0 * cos(time), 4.75,
-                      1.0 + 4.0 * sin(time))));
+ Light light = Light(vec3(1.0) * intensity, normalize(vec3(1.0 + 5.0 * cos(time / 5.0), 4.75, 1.0 + 4.0 * sin(time / 5.0))));
 
 const Intersect miss = Intersect(0.0, vec3(0.0), Material(vec3(0.0), 0.0, 0.0));
 
-const int num_spheres = 3;
+const int num_spheres = 5;
 Sphere spheres[num_spheres];
 
 void generateShapes(){
 
-  spheres[0] = Sphere(2.0, vec3(-4.0, 3.0 + sin(time), 0), Material(vec3(1.0, 0.0, 0.2), 1.0, 0.001));
-  spheres[1] = Sphere(3.0, vec3(4.0 + cos(time), 3 , 0), Material(vec3(0.0, 0.2, 1.0), 1.0, 1.0));
-  spheres[2] = Sphere(1.0, vec3(0.5, 1.0, 6.0), Material(vec3(1.0, 1.0, 1.0), 0.5, 0.25));
+  spheres[0] = Sphere(3.0, vec3(0.0, 3.0, 0), Material(vec3(0.7, 0.15, 0.125), 1.0, 0.079));
+  spheres[1] = Sphere(4.0, vec3(8.0, 4, 0), Material(vec3(1.0, 0.354,0.725), 0.5, 1.0));
+  spheres[2] = Sphere(1.0, vec3(3.5, 1.0, 6.0), Material(vec3(1.0, 1.0, 1.0), 0.3, 0.25));
+  spheres[3] = Sphere(1.0, vec3(-1.5, 1.0, 4.0), Material(vec3(0.2, 0.237, 0.473), 0.8, 0.75));
+  spheres[4] = Sphere(0.5, vec3(1.0, 0.5, 7.0), Material(vec3(1.0, 1.0, 0.0), 1.0, 0.0));
+	
 }
 
 Intersect intersect(Ray ray, Sphere sphere) {
@@ -87,7 +88,6 @@ Intersect intersect(Ray ray, Plane plane) {
     float len = -dot(ray.origin, plane.normal) / dot(ray.direction, plane.normal);
     return (len < 0.0) ? miss : Intersect(len, plane.normal, plane.material);
 }
-
 
 Intersect trace(Ray ray) {
 
@@ -136,36 +136,15 @@ vec3 radiance(Ray ray) {
 
 void main() {
   //Implementation of new code
-
+  //http://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
   generateShapes();
 
  vec2 uv = (-1.0 + 2.0 * gl_FragCoord.xy / resolution.xy) / vec2(1.0, resolution.x / resolution.y);
- //http://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
-  Ray ray = Ray(vec3(0.0, ray_pos.y, ray_pos.z), normalize(vec3(uv.x, uv.y, -1.0)));
-  gl_FragColor = vec4(pow(radiance(ray) * exposure, vec3(1.0 / gamma)), 1.0);
+  //use this one for WEBGL purposes (debugging)
+  //Ray ray = Ray(vec3(0.0, 2, 10.0), normalize(vec3(uv.x, uv.y, -1.0)));
+  //use this one for Octet
+  Ray ray = Ray(vec3(ray_pos.x, ray_pos.y, ray_pos.z), normalize(vec3(uv.x, uv.y, -1.0)));
 
-//  Andys example for the raytracer
-//  for (int i = 0; i != num_spheres; ++i) {
-//    vec3 omc = ray_start - spheres[i].position.xyz;
-//    // solve (omc + d * ray_direction)^2 == r^2 for d
-//    // d^2 * ray_direction^2 + 2 * dot(ray_direction, omc) + omc^2 - r^2 == 0
-//    float b = dot(ray_direction, omc), c = dot(omc, omc) - squared(spheres[i].radius);
-//    if (b*b - c >= 0) {
-//      float d = -b - sqrt(b*b - c);
-//      vec3 pos = ray_start + ray_direction * d;
-//      vec3 normal = normalize(pos - spheres[i].position.xyz);
-//      if (d < min_d) {
-//        float rdotn = dot(normal, -ray_direction);
-//        float specular = rdotn <= 0 ? 0 : pow(rdotn, 10);
-//        gl_FragColor = spheres[i].colour + vec4(1, 1, 1, 1) * specular;
-//        min_d = d;
-//      }
-//    }
-//  }
-//
-//  if (min_d == 1e37) {
-//    gl_FragColor = vec4(0.0, 0., 0.1, 0);
-//    //discard;
-//  }
+  gl_FragColor = vec4(pow(radiance(ray) * exposure, vec3(1.0 / gamma)), 1.0);
 }
 

@@ -49,6 +49,12 @@ namespace octet{
       if (the_app->is_key_down('S')){
         ++ray_position->z();
       }
+      if (the_app->is_key_down('A')){
+        --ray_position->x();
+      }
+      if (the_app->is_key_down('D')){
+        ++ray_position->x();
+      }
       if (the_app->is_key_down(key_up)){
         ++ray_position->y();
       }

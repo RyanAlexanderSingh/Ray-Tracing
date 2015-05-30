@@ -67,6 +67,7 @@ namespace octet {
 
       param_shader *shader = new param_shader("shaders/default.vs", "shaders/raycast.fs");
       raytracer = new material(vec4(1, 1, 1, 1), shader);
+      
 
       int vx = 0, vy = 0;
       get_viewport_size(vx, vy);
