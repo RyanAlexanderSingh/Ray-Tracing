@@ -86,7 +86,7 @@ Intersect intersect(Ray ray, Sphere sphere) {
 Intersect intersect(Ray ray, Plane plane) {
     float len = -dot(ray.origin, plane.normal) / dot(ray.direction, plane.normal);
     vec3 col = vec3(0.8, 0.9, 1.0);
-    vec3 pos = ray.origin + ray.direction;
+    vec3 pos = ray.origin + ray.direction*len;
     float f = mod( floor(5.0*pos.z) + floor(5.0*pos.x), 2.0);
     col = 0.4 + 0.1*f*vec3(1.0);
     return (len < 0.0) ? miss : Intersect(len, plane.normal, Material(col, 1.0, 0.0));
