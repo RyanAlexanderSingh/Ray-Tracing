@@ -44,10 +44,10 @@ namespace octet{
     
     void keyboard_inputs(){
       if (the_app->is_key_down('W')){
-        ++ray_position->z();
+        --ray_position->z();
       }
       if (the_app->is_key_down('S')){
-        --ray_position->z();
+        ++ray_position->z();
       }
       if (the_app->is_key_down(key_up)){
         ++ray_position->y();

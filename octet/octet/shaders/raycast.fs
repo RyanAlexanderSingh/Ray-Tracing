@@ -8,11 +8,9 @@ uniform vec2 resolution;
 uniform vec2 mouse;
 uniform vec3 ray_pos;
 
-
-
 struct Ray {
-    vec3 origin;
-    vec3 direction;
+  vec3 origin;
+  vec3 direction;
 };
 
 struct Light {
@@ -54,7 +52,6 @@ const float gamma = 2.2;
 const float intensity = 100.0;
 const vec3 ambient = vec3(0.6, 0.8, 1.0) * intensity / gamma;
 
-
  Light light = Light(vec3(1.0) * intensity, normalize(
                 vec3(-1.0 + 4.0 * cos(time), 4.75,
                       1.0 + 4.0 * sin(time))));
@@ -67,7 +64,7 @@ Sphere spheres[num_spheres];
 void generateShapes(){
 
   spheres[0] = Sphere(2.0, vec3(-4.0, 3.0 + sin(time), 0), Material(vec3(1.0, 0.0, 0.2), 1.0, 0.001));
-  spheres[1] = Sphere(3.0, vec3(4.0 + cos(time), 3, 0), Material(vec3(0.0, 0.2, 1.0), 1.0, 0.0));
+  spheres[1] = Sphere(3.0, vec3(4.0 + cos(time), 3 , 0), Material(vec3(0.0, 0.2, 1.0), 1.0, 1.0));
   spheres[2] = Sphere(1.0, vec3(0.5, 1.0, 6.0), Material(vec3(1.0, 1.0, 1.0), 0.5, 0.25));
 }
 
@@ -95,7 +92,7 @@ Intersect intersect(Ray ray, Plane plane) {
 Intersect trace(Ray ray) {
 
     Intersect intersection = miss;
-    Intersect plane = intersect(ray, Plane(vec3(0, 1, 0), Material(vec3(1.0, 1.0, 1.0), 1.0, 0.0)));
+    Intersect plane = intersect(ray, Plane(vec3(0, 1, 0), Material(vec3(0.6, 0.6, 0.6), 1.0, 0.0)));
     if (plane.material.diffuse > 0.0 || plane.material.specular > 0.0) { intersection = plane; }
     for (int i = 0; i < num_spheres; i++) {
         Intersect sphere = intersect(ray, spheres[i]);
