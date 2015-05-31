@@ -7,6 +7,9 @@ precision mediump float;
 // raycast in shader example
 //
 
+#define ROTATE true
+#define OCTET false
+
 //---------------------------------------------------------
 
 uniform float time;
@@ -16,21 +19,18 @@ uniform vec3 ray_pos;
 
 //---------------------------------------------------------
 
-#define ROTATE false
-#define OCTET false
-
 struct Ray {
   vec3 origin;
   vec3 direction;
 };
 
 struct Light {
-  vec3 color;
+  vec3 colour;
   vec3 direction;
 };
 
 struct Material{
-  vec3 color;
+  vec3 colour;
   float diffuse;
   float specular;
 };
@@ -56,7 +56,7 @@ struct Plane{
 //---------------------------------------------------------
 
 const float epsilon = 1e-3;
-const int iterations = 10;
+const int iterations = 3;
 
 const Intersect miss = Intersect(0.0, vec3(0.0), Material(vec3(0.0), 0.0, 0.0));
 //---------------------------------------------------------
@@ -67,7 +67,6 @@ const vec3 ambient = vec3(0.6, 0.8, 1.0) * intensity / gamma;
 
 Light light = Light(vec3(1.0) * intensity, normalize(vec3(1.0 + 5.0 * cos(time / 5.0), 4.75, 1.0 + 4.0 * sin(time / 5.0))));
 //Light light = Light(vec3(1.0) * intensity, normalize(vec3(-1.0, 0.75, 1.0)));
-
 
 //---------------------------------------------------------
 
@@ -98,19 +97,19 @@ Intersect intersect(Ray ray, Sphere sphere) {
 
 Intersect intersect_cylinder(Ray ray, Sphere sphere) {
 	
-	vec3 raycast = ray.origin - sphere.position;
-	vec3 sphere_axis = vec3(0.0, 1.0, 0.0);
-	vec3 n = cross(ray.direction,sphere_axis);
-	float ln = length(n);
+  vec3 raycast = ray.origin - sphere.position;
+  vec3 sphere_axis = vec3(0.0, 1.0, 0.0);
+  vec3 n = cross(ray.direction,sphere_axis);
+  float ln = length(n);
 	
-	 // Parallel? (?)
-  	if((ln<0.)&&(ln>-0.)) return miss;
-  	 
+	// Parallel? (?)
+  if((ln<0.)&&(ln>-0.)) return miss;
+	 
 	n = normalize(n);
 	float d = abs(dot(raycast, n));
 	
-	if(d <= sphere.radius){
-		vec3 origin = cross(raycast, sphere_axis);
+	if(d <= sphere.radius) {
+         	vec3 origin = cross(raycast, sphere_axis);
 		float t = -dot(origin, n) / ln;
 		origin = cross(n, sphere_axis);
 		float s = abs( sqrt(sphere.radius *sphere.radius - d*d) / dot (ray.direction, origin));
@@ -153,70 +152,59 @@ Intersect intersect(Ray ray, Plane plane) {
 
 Intersect trace(Ray ray) {
 
-    Intersect intersection = miss;
-    Intersect plane = intersect(ray,  Plane(vec3(0, 1, 0), Material(vec3(0.6, 0.6, 0.6), 1.0, 0.0)));
-    if (plane.material.diffuse > 0.0 || plane.material.specular > 0.0) { intersection = plane; }
-	
-    //only calculate the nearest hits to the ray when we are rotating the camera around
-    if(ROTATE){
-    float distances[num_spheres];
-      for(int i=0; i<num_spheres; ++i){
-          vec3 dist = spheres[i].position - ray.origin;
-          distances[i]= dot(ray.direction, dist);
-      }
-      for(int i=0; i<num_spheres;++i)
-      {
-        for(int j=0; j<num_spheres;++j) 
-        {
-          if(distances[j] < distances[i])
-          {
-            float temp = distances[i];
-            distances[i] = distances[j];
-            distances[j] = temp;
-            Sphere tempsphere = spheres[i];
-            spheres[i] = spheres[j];
-            spheres[j] = tempsphere;
-          }
+  Intersect intersection = miss;
+  Intersect plane = intersect(ray,  Plane(vec3(0, 1, 0), Material(vec3(0.6, 0.6, 0.6), 1.0, 0.0)));
+  if (plane.material.diffuse > 0.0 || plane.material.specular > 0.0) { intersection = plane; }
+  //only calculate the nearest hits to the ray when we are rotating the camera around
+  if(ROTATE){
+  float distances[num_spheres];
+  for(int i=0; i<num_spheres; ++i){
+    vec3 dist = spheres[i].position - ray.origin;
+    distances[i]= dot(ray.direction, dist);
+  }
+  for(int i=0; i<num_spheres;++i) { 
+    for(int j=0; j<num_spheres;++j) {
+      if(distances[j] < distances[i]) {
+        float temp = distances[i];
+        distances[i] = distances[j];
+        distances[j] = temp;
+        Sphere tempsphere = spheres[i];
+        spheres[i] = spheres[j];
+        spheres[j] = tempsphere;
         }
       }
     }
-    for(int i=0;i<num_spheres;++i)
-    {
-     Intersect sphere = spheres[i].cylinder ? intersect_cylinder(ray,spheres[i]) : intersect(ray, spheres[i]);
-     if (sphere.material.diffuse > 0.0 || sphere.material.specular > 0.0) intersection = sphere;
-    }
-    return intersection;
+  }
+  for(int i=0;i<num_spheres;++i) {
+    Intersect sphere = spheres[i].cylinder ? intersect_cylinder(ray,spheres[i]) : intersect(ray, spheres[i]);
+    if (sphere.material.diffuse > 0.0 || sphere.material.specular > 0.0) intersection = sphere;
+  }
+  return intersection;
 }
 
 vec3 radiance(Ray ray) {
-    vec3 color, fresnel;
-    vec3 mask = vec3(1.0);
-    for (int i = 0; i <= iterations; ++i) {
-        Intersect hit = trace(ray);
+   
+  vec3 colour, fresnel;
+  vec3 mask = vec3(1.0);
+  for (int i = 0; i <= iterations; ++i) {
+    Intersect hit = trace(ray);
+    if (hit.material.diffuse > 0.0 || hit.material.specular > 0.0) {
+      vec3 r0 = hit.material.colour.rgb * hit.material.specular;
+      float hv = clamp(dot(hit.normal, -ray.direction), 0.0, 1.0);
+      fresnel = r0 + (1.0 - r0) * pow(1.0 - hv, 5.0); mask *= fresnel;
 
-        if (hit.material.diffuse > 0.0 || hit.material.specular > 0.0) {
-
-            vec3 r0 = hit.material.color.rgb * hit.material.specular;
-            float hv = clamp(dot(hit.normal, -ray.direction), 0.0, 1.0);
-            fresnel = r0 + (1.0 - r0) * pow(1.0 - hv, 5.0); mask *= fresnel;
-
-
-            if (trace(Ray(ray.origin + hit.len * ray.direction + epsilon * light.direction, light.direction)) == miss) {
-                color += clamp(dot(hit.normal, light.direction), 0.0, 1.0) * light.color
-                       * hit.material.color.rgb * hit.material.diffuse  // Add Diffuse
-                       * (1.0 - fresnel) * mask / fresnel;         // Subtract Specular
-            }
-
-            vec3 reflection = reflect(ray.direction, hit.normal);
-            ray = Ray(ray.origin + hit.len * ray.direction + epsilon * reflection, reflection);
-
-        } 
-        else {
-            vec3 spotlight = vec3(1e6) * pow(abs(dot(ray.direction, light.direction)), 600.0);
-            color += mask * (ambient + spotlight); break;
-        }
+      if (trace(Ray(ray.origin + hit.len * ray.direction + epsilon * light.direction, light.direction)) == miss) {
+        colour += clamp(dot(hit.normal, light.direction), 0.0, 1.0) * light.colour * hit.material.colour.rgb * hit.material.diffuse * (1.0 - fresnel) * mask / fresnel;
+      }
+      vec3 reflection = reflect(ray.direction, hit.normal);
+      ray = Ray(ray.origin + hit.len * ray.direction + epsilon * reflection, reflection);
+    } 
+    else {
+    vec3 spotlight = vec3(1e6) * pow(abs(dot(ray.direction, light.direction)), 600.0);
+    colour += mask * (ambient + spotlight); break;
     }
-    return color;
+  }
+  return colour;
 }
 
 
@@ -228,9 +216,10 @@ void main() {
 	
   Ray camera_ray;
   // camera  
-  float ray_x = 30.0*cos(6.0*mouse.x);
-  float ray_z = 30.0*sin(6.0*mouse.x);
-  camera_ray.origin = vec3( ray_x, (3.0 * mouse.y) +2.0 , ray_z );
+  float t = time * 0.5;
+  float ray_x = 30.0*cos(t+6.0);
+  float ray_z = 30.0*sin(t+6.0);
+  camera_ray.origin = vec3( ray_x, (3.0) +2.0 , ray_z );
   vec3 ta = vec3( 0.0, 3.0, 0.0);
 
   // camera tx

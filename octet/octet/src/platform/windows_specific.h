@@ -156,7 +156,7 @@ namespace octet {
       gl_context = 0;
      
       window_handle = CreateWindowW(L"MyClass", L"octet",
-        WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 1600, 1024,
+        WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 1280, 720,
         NULL, NULL, wndclass.hInstance, (LPVOID)this
       );
 
