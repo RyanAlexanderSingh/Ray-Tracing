@@ -42,7 +42,7 @@ namespace octet {
 
       int x, y;
       get_mouse_pos(x, y);
-      vec2 mouse_pos = vec2(x, y);
+      vec2 mouse_pos = vec2(x*0.001f, y*0.01f);
       raytracer->set_uniform(uniform_mouse, &mouse_pos, sizeof(mouse_pos));
 
       //Update the time for the sphere movemenets
