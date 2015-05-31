@@ -11,10 +11,12 @@ precision mediump float;
 uniform float time;
 uniform vec2 resolution;
 uniform vec2 mouse;
+uniform vec3 ray_pos;
 
 //---------------------------------------------------------
 
 #define ROTATE false
+#define OCTET false
 
 struct Ray {
   vec3 origin;
@@ -43,19 +45,13 @@ struct Sphere{
   vec3 position;
   Material material;
   bool cylinder;
+  float bh;
 };
 
 struct Plane{
   vec3 normal;
   Material material;
 };
-
-struct Wall{
-  float radius;
-  vec3 position;
-  Material material;
-};
-
 //---------------------------------------------------------
 
 const float epsilon = 1e-3;
@@ -70,7 +66,7 @@ const vec3 ambient = vec3(0.6, 0.8, 1.0) * intensity / gamma;
 //---------------------------------------------------------
 
 Light light = Light(vec3(1.0) * intensity, normalize(vec3(1.0 + 5.0 * cos(time / 5.0), 4.75, 1.0 + 4.0 * sin(time / 5.0))));
-//Light light = Light(vec3(1.0) * intensity, normalize(vec3(-0.0, 0.75, 1.0)));
+//Light light = Light(vec3(1.0) * intensity, normalize(vec3(-1.0, 0.75, 1.0)));
 const Intersect miss = Intersect(0.0, vec3(0.0), Material(vec3(0.0), 0.0, 0.0));
 
 //---------------------------------------------------------
@@ -79,11 +75,11 @@ const int num_spheres = 5;
 Sphere spheres[num_spheres];
 
 void generateSpheres(){
-  spheres[0] = Sphere(3.0, vec3(0.0, 3.0, 0), Material(vec3(0.7, 0.15, 0.125), 1.0, 0.079), false);
-  spheres[1] = Sphere(4.0, vec3(8.0, 4.0, 0), Material(vec3(1.0, 0.354,0.725), 0.5, 1.0), false);
-  spheres[2] = Sphere(1.0, vec3(3.5, 1.0, 6.0), Material(vec3(1.0, 1.0, 1.0), 0.3, 0.25), false);
-  spheres[3] = Sphere(1.0, vec3(-2.5, 1.0, 4.0), Material(vec3(0.2, 0.237, 0.473), 0.8, 0.75), true);
-  spheres[4] = Sphere(0.5, vec3(1.0, 1.5 + sin(time), 7.0), Material(vec3(1.0, 1.0, 0.0), 1.0, 0.0), false);
+  spheres[0] = Sphere(3.0, vec3(0.0, 3.0, 0), Material(vec3(0.7, 0.15, 0.125), 1.0, 0.079), false, 0.);
+  spheres[1] = Sphere(4.0, vec3(8.0, 4.0, 0), Material(vec3(1.0, 0.354,0.725), 0.5, 1.0), false, 0.);
+  spheres[2] = Sphere(1.0, vec3(3.5, 1.0, 6.0), Material(vec3(1.0, 1.0, 1.0), 0.3, 0.25), false, 0.);
+  spheres[3] = Sphere(1.0, vec3(-2.5, 5.0, 4.0), Material(vec3(0.2, 0.237, 0.473), 0.8, 0.75), true, 1.);
+  spheres[4] = Sphere(0.5, vec3(1.0, 1.5, 7.0), Material(vec3(1.0, 0.318, 0.1), 1.0, 0.0), true, 0.);
 }
 
 //---------------------------------------------------------
@@ -108,10 +104,11 @@ Intersect intersect_cylinder(Ray ray, Sphere sphere) {
 	float ln;
 	float fin, fout;
 	
-	
 	RC = ray.origin - sphere.position;
 	n = cross(ray.direction,vec3(0.0,1.0,0.0));
-	ln = dot(n,n);
+	ln = length(n);
+	
+	n = normalize(n);
 	
 	d = abs(dot(RC,n));
 	
@@ -119,11 +116,11 @@ Intersect intersect_cylinder(Ray ray, Sphere sphere) {
 		O = cross(RC,vec3(0.0,1.0,0.0));
 		t = -dot(O,n) / ln;
 		O = cross(n, vec3(0.0,1.0,0.0));
-		s = abs( sqrt(sphere.radius*sphere.radius-d*d));
+		s = abs( sqrt(sphere.radius*sphere.radius-d*d) / dot (ray.direction, O));
 		
 		fin =t-s;
 		fout = t+s;
-		float len = fout;
+		float len;
 		if(fin<-0.)
 		{
 			if(fout<-0.) return miss;
@@ -141,8 +138,8 @@ Intersect intersect_cylinder(Ray ray, Sphere sphere) {
 			len = fout;
 		}
 		float h = ray.origin.y+ray.direction.y*len;
-		if(h>5.0) return miss;
-		if(h<0.0) return miss;
+		if(h>sphere.position.y) return intersect(ray, sphere);
+		if(h<sphere.bh) {sphere.position.y = 1.0; return intersect(ray, sphere);}
 		
 		vec3 normal = ray.origin+len*ray.direction - sphere.position;
 		normal.y = 0.0;
@@ -159,19 +156,6 @@ Intersect intersect(Ray ray, Plane plane) {
   float f = mod( floor(1.0*pos.z) + floor(1.0*pos.x), 2.0);
   col = 0.4 + 0.1*f*vec3(1.0);
   return (len < 0.0) ? miss : Intersect(len, plane.normal, Material(col, 1.0, 0.0));
-}
-
-Intersect intersect_wall(Ray ray, Wall wall) {
-      //we need to check for a negative sqrt
-    vec3 oc = wall.position - ray.origin;
-    float l = dot(ray.direction, oc);
-    float det = pow(l, 2.0) - dot(oc, oc) + pow(wall.radius, 2.0);
-    if (det < 0.0) return miss;
-
-    float len = l - sqrt(det);
-    if (len < 0.0) len = l + sqrt(det);
-    if (len < 0.0) return miss;
-    return Intersect(len, (ray.origin + len*ray.direction - wall.position) / wall.radius, wall.material);
 }
 
 Intersect trace(Ray ray) {
@@ -263,10 +247,8 @@ void main() {
   vec3 cv = normalize( cross(cu, cw) );
   camera_ray.direction = normalize( uv.x*cu + uv.y*cv + 2.5*cw );
 	
+  vec3 ray_position = OCTET ? ray_pos : vec3(3, 2.5, 12.5);
   //use this one for WebGL purposes (debugging)
-  Ray ray = ROTATE ? camera_ray : Ray(vec3(3, 2.5, 14.0), normalize(vec3(uv.x, uv.y, -1.0)));
-  //use this one for Octet
- // Ray ray = Ray(vec3(ray_pos.x, ray_pos.y, ray_pos.z), normalize(vec3(uv.x, uv.y, -1.0)));
-
+  Ray ray = ROTATE ? camera_ray : Ray(ray_position, normalize(vec3(uv.x, uv.y, -1.0)));
   gl_FragColor = vec4(pow(radiance(ray) * exposure, vec3(1.0 / gamma)), 1.0);
 }
