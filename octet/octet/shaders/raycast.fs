@@ -8,6 +8,7 @@ precision mediump float;
 //
 
 //---------------------------------------------------------
+
 uniform float time;
 uniform vec2 resolution;
 uniform vec2 mouse;
@@ -57,17 +58,16 @@ struct Plane{
 const float epsilon = 1e-3;
 const int iterations = 10;
 
-const float exposure = 1e-2;
-const float gamma = 2.2;
+const Intersect miss = Intersect(0.0, vec3(0.0), Material(vec3(0.0), 0.0, 0.0));
+//---------------------------------------------------------
 
+const float gamma = 2.2;
 const float intensity = 100.0;
 const vec3 ambient = vec3(0.6, 0.8, 1.0) * intensity / gamma;
 
-//---------------------------------------------------------
-
 Light light = Light(vec3(1.0) * intensity, normalize(vec3(1.0 + 5.0 * cos(time / 5.0), 4.75, 1.0 + 4.0 * sin(time / 5.0))));
 //Light light = Light(vec3(1.0) * intensity, normalize(vec3(-1.0, 0.75, 1.0)));
-const Intersect miss = Intersect(0.0, vec3(0.0), Material(vec3(0.0), 0.0, 0.0));
+
 
 //---------------------------------------------------------
 
@@ -97,49 +97,41 @@ Intersect intersect(Ray ray, Sphere sphere) {
 }
 
 Intersect intersect_cylinder(Ray ray, Sphere sphere) {
-	vec3 RC;
-	float d;
-	float t,s;
-	vec3 n, D, O;
-	float ln;
-	float fin, fout;
 	
-	RC = ray.origin - sphere.position;
-	n = cross(ray.direction,vec3(0.0,1.0,0.0));
-	ln = length(n);
+	vec3 raycast = ray.origin - sphere.position;
+	vec3 sphere_axis = vec3(0.0, 1.0, 0.0);
+	vec3 n = cross(ray.direction,sphere_axis);
+	float ln = length(n);
 	
+	 // Parallel? (?)
+  	if((ln<0.)&&(ln>-0.)) return miss;
+  	 
 	n = normalize(n);
+	float d = abs(dot(raycast, n));
 	
-	d = abs(dot(RC,n));
-	
-	if(d<=sphere.radius){
-		O = cross(RC,vec3(0.0,1.0,0.0));
-		t = -dot(O,n) / ln;
-		O = cross(n, vec3(0.0,1.0,0.0));
-		s = abs( sqrt(sphere.radius*sphere.radius-d*d) / dot (ray.direction, O));
+	if(d <= sphere.radius){
+		vec3 origin = cross(raycast, sphere_axis);
+		float t = -dot(origin, n) / ln;
+		origin = cross(n, sphere_axis);
+		float s = abs( sqrt(sphere.radius *sphere.radius - d*d) / dot (ray.direction, origin));
 		
-		fin =t-s;
-		fout = t+s;
+		float fin =t-s;
+		float fout = t+s;
 		float len;
-		if(fin<-0.)
+   		 //we need to check if these are non zeros.
+		if(fin < -0.)
 		{
-			if(fout<-0.) return miss;
+			if(fout < -0.) return miss;
 			else len = fout;
 		}
-		else if(fout<-0.0){
-			len = fin;
-		}
-		else if(fin<fout)
-		{
-			len = fin;
-		}
-		else
-		{
-			len = fout;
-		}
-		float h = ray.origin.y+ray.direction.y*len;
-		if(h>sphere.position.y) return intersect(ray, sphere);
-		if(h<sphere.bh) {sphere.position.y = 1.0; return intersect(ray, sphere);}
+		else if(fout < -0.) len = fin;
+		else if(fin < fout) len = fin;
+		else len = fout;
+
+		float hit = ray.origin.y+ray.direction.y*len;
+		//to generate cylinders/pill shapes, we have to draw the tops as spheres if the ray is out of bounds of the y pos (a miss)
+		if(hit > sphere.position.y) return intersect(ray, sphere); 
+		if(hit < sphere.bh) {sphere.position.y = 1.0; return intersect(ray, sphere);}
 		
 		vec3 normal = ray.origin+len*ray.direction - sphere.position;
 		normal.y = 0.0;
@@ -151,8 +143,9 @@ Intersect intersect_cylinder(Ray ray, Sphere sphere) {
 
 Intersect intersect(Ray ray, Plane plane) {
   float len = -dot(ray.origin, plane.normal) / dot(ray.direction, plane.normal);
-  vec3 col = vec3(0.8, 0.9, 1.0);
   vec3 pos = ray.origin + ray.direction*len;
+  //col is the material (pattern) of the floor plane.
+  vec3 col = vec3(0.8, 0.9, 1.0);
   float f = mod( floor(1.0*pos.z) + floor(1.0*pos.x), 2.0);
   col = 0.4 + 0.1*f*vec3(1.0);
   return (len < 0.0) ? miss : Intersect(len, plane.normal, Material(col, 1.0, 0.0));
@@ -164,32 +157,33 @@ Intersect trace(Ray ray) {
     Intersect plane = intersect(ray,  Plane(vec3(0, 1, 0), Material(vec3(0.6, 0.6, 0.6), 1.0, 0.0)));
     if (plane.material.diffuse > 0.0 || plane.material.specular > 0.0) { intersection = plane; }
 	
+    //only calculate the nearest hits to the ray when we are rotating the camera around
+    if(ROTATE){
     float distances[num_spheres];
-    for(int i=0; i<num_spheres; ++i){
-        vec3 dist = spheres[i].position - ray.origin;
-        distances[i]= dot(ray.direction, dist);
-    }
-    for(int i=0; i<num_spheres; ++i)
-    {
-      for(int j=0; j<num_spheres; ++j) 
+      for(int i=0; i<num_spheres; ++i){
+          vec3 dist = spheres[i].position - ray.origin;
+          distances[i]= dot(ray.direction, dist);
+      }
+      for(int i=0; i<num_spheres;++i)
       {
-        if(distances[j] < distances[i])
+        for(int j=0; j<num_spheres;++j) 
         {
-          float temp = distances[i];
-          distances[i] = distances[j];
-          distances[j] = temp;
-          Sphere tempsphere = spheres[i];
-          spheres[i] = spheres[j];
-          spheres[j] = tempsphere;
-       }
-     }
-  }
-    for(int i=0; i<num_spheres; ++i)
+          if(distances[j] < distances[i])
+          {
+            float temp = distances[i];
+            distances[i] = distances[j];
+            distances[j] = temp;
+            Sphere tempsphere = spheres[i];
+            spheres[i] = spheres[j];
+            spheres[j] = tempsphere;
+          }
+        }
+      }
+    }
+    for(int i=0;i<num_spheres;++i)
     {
-        Intersect sphere;
-	sphere = spheres[i].cylinder ? intersect_cylinder(ray,spheres[i]) : intersect(ray, spheres[i]);
-        if (sphere.material.diffuse > 0.0 || sphere.material.specular > 0.0)
-            intersection = sphere;
+     Intersect sphere = spheres[i].cylinder ? intersect_cylinder(ray,spheres[i]) : intersect(ray, spheres[i]);
+     if (sphere.material.diffuse > 0.0 || sphere.material.specular > 0.0) intersection = sphere;
     }
     return intersection;
 }
@@ -227,7 +221,6 @@ vec3 radiance(Ray ray) {
 
 
 void main() {
-  //Implementation of new code
   //http://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
   generateSpheres();
 	
@@ -235,20 +228,22 @@ void main() {
 	
   Ray camera_ray;
   // camera  
-  float rx = 30.0*cos(6.0*mouse.x);
-  float rz = 30.0*sin(6.0*mouse.x);
-  camera_ray.origin = vec3( rx, (3.0 * mouse.y) +2.0 , rz );
+  float ray_x = 30.0*cos(6.0*mouse.x);
+  float ray_z = 30.0*sin(6.0*mouse.x);
+  camera_ray.origin = vec3( ray_x, (3.0 * mouse.y) +2.0 , ray_z );
   vec3 ta = vec3( 0.0, 3.0, 0.0);
 
   // camera tx
-  vec3 cw = normalize( ta-camera_ray.origin );
-  vec3 cp = vec3( 0.0, 1.0, 0.0 );
-  vec3 cu = normalize( cross(cw, cp) );
-  vec3 cv = normalize( cross(cu, cw) );
-  camera_ray.direction = normalize( uv.x*cu + uv.y*cv + 2.5*cw );
+  vec3 cam_w = normalize( ta-camera_ray.origin );
+  vec3 cam_pos = vec3( 0.0, 1.0, 0.0 );
+  vec3 cu = normalize( cross(cam_w, cam_pos) );
+  vec3 cv = normalize( cross(cu, cam_w) );
+  camera_ray.direction = normalize( uv.x*cu + uv.y*cv + 2.5*cam_w );
 	
   vec3 ray_position = OCTET ? ray_pos : vec3(3, 2.5, 12.5);
   //use this one for WebGL purposes (debugging)
   Ray ray = ROTATE ? camera_ray : Ray(ray_position, normalize(vec3(uv.x, uv.y, -1.0)));
+	
+  const float exposure = 1e-2;
   gl_FragColor = vec4(pow(radiance(ray) * exposure, vec3(1.0 / gamma)), 1.0);
 }
