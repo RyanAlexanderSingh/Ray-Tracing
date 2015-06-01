@@ -70,12 +70,14 @@ Light light = Light(vec3(1.0) * intensity, normalize(vec3(1.0 + 5.0 * cos(time /
 
 //---------------------------------------------------------
 
-const int num_spheres = 5;
+const int num_spheres = 7;
 Sphere spheres[num_spheres];
 
 void generateSpheres(){
   spheres[0] = Sphere(3.0, vec3(0.0, 3.0, 0), Material(vec3(0.7, 0.15, 0.125), 1.0, 0.079), false, 0.);
-  spheres[1] = Sphere(4.0, vec3(8.0, 4.0, 0), Material(vec3(1.0, 0.354,0.725), 0.5, 1.0), false, 0.);
+  spheres[1] = Sphere(4.0, vec3(8.0, 4.0, 0), Material(vec3(0.0, 0.9354,0.25), 0.5, 1.0), false, 0.);
+  spheres[5] = Sphere(2.0, vec3(10.0, 7.0, 1.0), Material(vec3(0.0, 0.9354,0.25), 0.5, 1.0), false, 0.);
+  spheres[6] = Sphere(2.0, vec3(6.0, 7.0, 1.0), Material(vec3(0.0, 0.9354,0.25), 0.5, 1.0), false, 0.);
   spheres[2] = Sphere(1.0, vec3(3.5, 1.0, 6.0), Material(vec3(1.0, 1.0, 1.0), 0.3, 0.25), false, 0.);
   spheres[3] = Sphere(1.0, vec3(-2.5, 5.0, 4.0), Material(vec3(0.2, 0.237, 0.473), 0.8, 0.75), true, 1.);
   spheres[4] = Sphere(0.5, vec3(1.0, 1.5, 7.0), Material(vec3(1.0, 0.318, 0.1), 1.0, 0.0), true, 0.);
@@ -151,33 +153,17 @@ Intersect intersect(Ray ray, Plane plane) {
 }
 
 Intersect trace(Ray ray) {
-
+  bool first = true;
   Intersect intersection = miss;
   Intersect plane = intersect(ray,  Plane(vec3(0, 1, 0), Material(vec3(0.6, 0.6, 0.6), 1.0, 0.0)));
   if (plane.material.diffuse > 0.0 || plane.material.specular > 0.0) { intersection = plane; }
   //only calculate the nearest hits to the ray when we are rotating the camera around
-  if(ROTATE){
-  float distances[num_spheres];
-  for(int i=0; i<num_spheres; ++i){
-    vec3 dist = spheres[i].position - ray.origin;
-    distances[i]= dot(ray.direction, dist);
-  }
-  for(int i=0; i<num_spheres;++i) { 
-    for(int j=0; j<num_spheres;++j) {
-      if(distances[j] < distances[i]) {
-        float temp = distances[i];
-        distances[i] = distances[j];
-        distances[j] = temp;
-        Sphere tempsphere = spheres[i];
-        spheres[i] = spheres[j];
-        spheres[j] = tempsphere;
-        }
-      }
-    }
-  }
   for(int i=0;i<num_spheres;++i) {
     Intersect sphere = spheres[i].cylinder ? intersect_cylinder(ray,spheres[i]) : intersect(ray, spheres[i]);
-    if (sphere.material.diffuse > 0.0 || sphere.material.specular > 0.0) intersection = sphere;
+    if (sphere.len > 0. && (first || intersection.len > sphere.len)){
+        intersection = sphere;
+	first = false;
+    }
   }
   return intersection;
 }
