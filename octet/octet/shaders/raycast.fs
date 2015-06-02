@@ -102,7 +102,6 @@ Intersect intersect(Ray ray, Sphere sphere) {
     return Intersect(len, (ray.origin + len*ray.direction - sphere.position) / sphere.radius, sphere.material);
 }
 
-///Checking for a cylinder intersection is slightly more difficult than a sphere. 
 Intersect intersect_cylinder(Ray ray, Sphere sphere) {
 	
   vec3 raycast = ray.origin - sphere.position;
@@ -110,14 +109,16 @@ Intersect intersect_cylinder(Ray ray, Sphere sphere) {
   vec3 n = cross(ray.direction,sphere_axis);
   float ln = length(n);
 	
-	// Parallel? (?)
+  // Paralle to the axis, ignore the ray
   if((ln<0.)&&(ln>-0.)) return miss;
 	 
 	n = normalize(n);
 	float d = abs(dot(raycast, n));
 	
+	// If it's hitting the cylinder
 	if(d <= sphere.radius) {
-         	vec3 origin = cross(raycast, sphere_axis);
+		// Check the hit point with the surface
+        vec3 origin = cross(raycast, sphere_axis);
 		float t = -dot(origin, n) / ln;
 		origin = cross(n, sphere_axis);
 		float s = abs( sqrt(sphere.radius *sphere.radius - d*d) / dot (ray.direction, origin));
@@ -134,12 +135,13 @@ Intersect intersect_cylinder(Ray ray, Sphere sphere) {
 		else if(fout < -0.) len = fin;
 		else if(fin < fout) len = fin;
 		else len = fout;
-
+		// Obtain the length from the ray to the hit
 		float hit = ray.origin.y+ray.direction.y*len;
 		//to generate cylinders/pill shapes, we have to draw the tops as spheres if the ray is out of bounds of the y pos (a miss)
 		if(hit > sphere.position.y) return intersect(ray, sphere); 
 		if(hit < sphere.bh) {sphere.position.y = 1.0; return intersect(ray, sphere);}
 		
+		// The normal is always in the same direction from the rotation axis to the hit with the surface
 		vec3 normal = ray.origin+len*ray.direction - sphere.position;
 		normal.y = 0.0;
 		normal = normalize(normal);
