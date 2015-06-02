@@ -108,7 +108,7 @@ Intersect intersect_cylinder(Ray ray, Sphere sphere) {
   vec3 raycast = ray.origin - sphere.position;
   vec3 sphere_axis = vec3(0.0, 1.0, 0.0);
   vec3 n = cross(ray.direction,sphere_axis);
-  float ln = sqrt(dot(n*n));
+  float ln = length(n);
 	
 	// Parallel? (?)
   if((ln<0.)&&(ln>-0.)) return miss;
