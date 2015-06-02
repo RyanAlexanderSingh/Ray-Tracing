@@ -55,16 +55,20 @@ struct Plane{
 };
 //---------------------------------------------------------
 
-const float epsilon = 1e-3;
-const int iterations = 3;
 
-const Intersect miss = Intersect(0.0, vec3(0.0), Material(vec3(0.0), 0.0, 0.0));
+const float epsilon = 1e-3;
+const int iterations = 16; //iterative approach opposed to typical recursive ray casting algorithms.
+
+// a miss is defined as unedited pixel. (nothing is drawn)
+const Intersect miss = Intersect(0.0, vec3(0.0), Material(vec3(0.0), 0.0, 0.0)); 
 //---------------------------------------------------------
 
+//magic numbers for the light have been sourced by many GLSL projects which use ray tracing.
 const float gamma = 2.2;
 const float intensity = 100.0;
 const vec3 ambient = vec3(0.6, 0.8, 1.0) * intensity / gamma;
 
+//There are two lights here, current using moving one but feel free to comment out the static light.
 Light light = Light(vec3(1.0) * intensity, normalize(vec3(1.0 + 5.0 * cos(time / 5.0), 4.75, 1.0 + 4.0 * sin(time / 5.0))));
 //Light light = Light(vec3(1.0) * intensity, normalize(vec3(-1.0, 0.75, 1.0)));
 
@@ -73,6 +77,7 @@ Light light = Light(vec3(1.0) * intensity, normalize(vec3(1.0 + 5.0 * cos(time /
 const int num_spheres = 7;
 Sphere spheres[num_spheres];
 
+///Generation of the spheres. The boolean control simply defines if the sphere geometry is more like a cylinder with an intersecting sphere.
 void generateSpheres(){
   spheres[0] = Sphere(3.0, vec3(0.0, 3.0, 0), Material(vec3(0.7, 0.15, 0.125), 1.0, 0.079), false, 0.);
   spheres[1] = Sphere(4.0, vec3(8.0, 4.0, 0), Material(vec3(0.0, 0.9354,0.25), 0.5, 1.0), false, 0.);
@@ -97,12 +102,13 @@ Intersect intersect(Ray ray, Sphere sphere) {
     return Intersect(len, (ray.origin + len*ray.direction - sphere.position) / sphere.radius, sphere.material);
 }
 
+///Checking for a cylinder intersection is slightly more difficult than a sphere. 
 Intersect intersect_cylinder(Ray ray, Sphere sphere) {
 	
   vec3 raycast = ray.origin - sphere.position;
   vec3 sphere_axis = vec3(0.0, 1.0, 0.0);
   vec3 n = cross(ray.direction,sphere_axis);
-  float ln = length(n);
+  float ln = sqrt(dot(n*n));
 	
 	// Parallel? (?)
   if((ln<0.)&&(ln>-0.)) return miss;

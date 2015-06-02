@@ -19,29 +19,8 @@ namespace octet{
 
   public:
     inputs(){}
-
-    void mouse_inputs(){
-      //mouse control using x and y pos of mouse
-      int x, y;
-      the_app->get_mouse_pos(x, y);
-      int vx, vy;
-      the_app->get_viewport_size(vx, vy);
-
-      mat4t modelToWorld;
-      camera = app_scene->get_camera_instance(0);
-      mat4t &camera_mat = camera->get_node()->access_nodeToParent();
-      modelToWorld.loadIdentity();
-      modelToWorld[3] = vec4(camera_mat.w().x(), camera_mat.w().y(), camera_mat.w().z(), 1);
-      modelToWorld.rotateY((float)-x*2.0f);
-      if (vy / 2 - y < 70 && vy / 2 - y > -70)
-        modelToWorld.rotateX((float)vy / 2 - y);
-      if (vy / 2 - y >= 70)
-        modelToWorld.rotateX(70);
-      if (vy / 2 - y <= -70)
-        modelToWorld.rotateX(-70);
-      camera_mat = modelToWorld;//apply to the node
-    }
     
+    ///Key controls move the rays origin position when enabled in raycast.fs 
     void keyboard_inputs(){
       if (the_app->is_key_down('W')){
         --ray_position->z();
@@ -74,7 +53,6 @@ namespace octet{
     }
 
     void update(){
-      //mouse_inputs();
       keyboard_inputs();
     }
    };
